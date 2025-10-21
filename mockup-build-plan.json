@@ -1,0 +1,354 @@
+{
+  "meta": {
+    "name": "",
+    "numImages": 20,
+    "heroStyle": "option1",
+    "gridDetail": "shadow",
+    "bgMode": "brand",
+    "bgColor": "#863232",
+    "useBrandColors": false,
+    "logoUrl": "",
+    "subtitle": "Watercolor Clipart Pack",
+    "cta": "Add To Basket & Download Instantly",
+    "shuffleMockups": false,
+    "overviewGridCols": 5,
+    "generatedAt": "2025-10-14T00:37:06.804Z"
+  },
+  "order": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "pages": [
+    {
+      "id": 1,
+      "title": "Hero Cover",
+      "kind": "hero",
+      "overlays": {
+        "h1": "Clipart Collection",
+        "body": "Instant Download · High-Resolution · Commercial Use",
+        "callout": "20 Transparent PNGs"
+      },
+      "layout": {},
+      "hero": {
+        "style": "option1"
+      },
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 2,
+      "title": "Overview Grid A",
+      "kind": "collection",
+      "overlays": {
+        "h2": "Included In Your Download!",
+        "body": "High-Resolution Transparent PNG Files · 300 DPI"
+      },
+      "layout": {
+        "gridCols": 5,
+        "gridDetail": "shadow"
+      },
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 3,
+      "title": "Overview Grid B",
+      "kind": "collection",
+      "overlays": {
+        "h2": "Included In Your Download!",
+        "body": "High-Resolution Transparent PNG Files · 300 DPI"
+      },
+      "layout": {
+        "gridCols": 5,
+        "gridDetail": "shadow"
+      },
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 4,
+      "title": "Detail Beauty",
+      "kind": "use",
+      "overlays": {
+        "h2": "Beautifully Detailed Graphics",
+        "body": "Crisp Quality · Perfect for Print or Digital · 300 DPI"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 5,
+      "title": "Transparency Demo",
+      "kind": "use",
+      "overlays": {
+        "h2": "Transparent Backgrounds",
+        "body": "Ready To Use · High Quality · Clean Edges"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 6,
+      "title": "Resolution / Sizing",
+      "kind": "use",
+      "overlays": {
+        "h2": "High Resolution For Every Size",
+        "body": "Scale Without Quality Loss · Max ~13.7in / 34.9cm"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 7,
+      "title": "Branding Use",
+      "kind": "use",
+      "overlays": {
+        "h2": "Perfect For Branding",
+        "body": "Create Logos, Business Cards & Social Posts"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 8,
+      "title": "POD Use",
+      "kind": "use",
+      "overlays": {
+        "h2": "Ready For Print-On-Demand",
+        "body": "Use On T-Shirts, Mugs, Tote Bags & More"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 9,
+      "title": "Crafts & Printables",
+      "kind": "use",
+      "overlays": {
+        "h2": "Great For Crafts & Printables",
+        "body": "Invitations, Scrapbooks, Cards & Planners"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 10,
+      "title": "Software Ease",
+      "kind": "use",
+      "overlays": {
+        "h2": "Easy To Use In Any Program",
+        "body": "Drag & Drop in Canva, Photoshop, Procreate"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 11,
+      "title": "Coordinated Elements",
+      "kind": "use",
+      "overlays": {
+        "h2": "Perfectly Coordinated Elements",
+        "body": "Designed To Work Seamlessly Together"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 12,
+      "title": "License Summary",
+      "kind": "info",
+      "overlays": {
+        "h2": "Commercial License Included",
+        "body": "You Can: Sell physicals/POD, use in printables (flattened). You Can't: Resell files, share, or offer as freebies."
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 13,
+      "title": "How It Works",
+      "kind": "info",
+      "overlays": {
+        "h2": "How It Works",
+        "body": "1) Purchase  2) Download From Your Purchases  3) Get Files From The PDF"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 14,
+      "title": "Pack Value",
+      "kind": "info",
+      "overlays": {
+        "h1": "20 High-Quality Clipart Files",
+        "body": "Instant Download · Commercial Use Included"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 15,
+      "title": "Brand Trust",
+      "kind": "info",
+      "overlays": {
+        "h1": "Your Brand",
+        "body": "Designed for Creators, Loved by Designers"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 16,
+      "title": "Cross-Sell / More",
+      "kind": "info",
+      "overlays": {
+        "h1": "More Collections You’ll Love",
+        "callout": "Explore Coordinating Bundles & Themes!"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 17,
+      "title": "Freebie CTA",
+      "kind": "info",
+      "overlays": {
+        "h1": "Get A Free Design Pack!",
+        "h2": "Join For Monthly Freebies",
+        "body": "Instant access · New graphics monthly"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 18,
+      "title": "Testimonial",
+      "kind": "info",
+      "overlays": {
+        "h1": "What Our Customers Say",
+        "body": "“Absolutely love these designs! So easy to use and beautiful quality.”"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 19,
+      "title": "Inspiration / Board",
+      "kind": "info",
+      "overlays": {
+        "h1": "Endless Creative Possibilities",
+        "h2": "See How Others Use These Designs",
+        "body": "From branding to POD—create freely"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    },
+    {
+      "id": 20,
+      "title": "Final CTA",
+      "kind": "info",
+      "overlays": {
+        "h1": "Instant Download",
+        "h2": "Start Creating Today",
+        "body": "Commercial License Included · Lifetime Access"
+      },
+      "layout": {},
+      "background": {
+        "mode": "brand",
+        "color": "#863232"
+      },
+      "logoUrl": null
+    }
+  ]
+}

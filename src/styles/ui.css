@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-indigo-50 via-white to-purple-50 text-gray-800 font-sans;
+  }
+}
+
+@layer components {
+  /* Layout containers */
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 md:px-6 py-10 space-y-10;
+  }
+
+  /* Headings */
+  .heading-1 {
+    @apply text-3xl font-bold text-gray-900 tracking-tight;
+  }
+  .heading-2 {
+    @apply text-xl font-semibold text-gray-800;
+  }
+  .muted {
+    @apply text-sm text-gray-600;
+  }
+
+  /* Panels / cards */
+  .panel {
+    @apply bg-white/80 backdrop-blur border border-gray-200 rounded-2xl shadow-sm transition hover:shadow-md;
+  }
+  .panel-header {
+    @apply flex items-center gap-3 border-b border-gray-100 pb-3 mb-4;
+  }
+  .panel-title {
+    @apply text-lg font-semibold text-gray-900;
+  }
+  .panel-icon {
+    @apply w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xl;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-medium transition;
+  }
+  .btn-primary {
+    @apply btn bg-indigo-600 text-white hover:bg-indigo-700 shadow;
+  }
+  .btn-soft {
+    @apply btn bg-gray-100 text-gray-800 hover:bg-gray-200;
+  }
+
+  /* Inputs */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white/70 backdrop-blur focus:outline-none focus:border-indigo-500 transition;
+  }
+  input[type="color"] {
+    @apply h-12 rounded-xl border-2 border-gray-200 cursor-pointer;
+  }
+
+  /* Checkbox label alignment */
+  .checkbox-line {
+    @apply flex items-center gap-2 text-sm text-gray-700;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100;
+  }
+
+  /* Grid cards */
+  .mockup-grid {
+    @apply grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  .mockup-card {
+    @apply relative rounded-2xl overflow-hidden border-2 border-gray-100 bg-white shadow-sm hover:shadow-lg transition;
+  }
+  .mockup-footer {
+    @apply p-3 flex items-center justify-between bg-white border-t border-gray-100;
+  }
+}

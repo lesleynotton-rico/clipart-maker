@@ -1,0 +1,31 @@
+// src/config/tokenLabels.ts
+// Map token keys → friendly labels shown in Step 3 inputs
+export const PRETTY_LABELS: Record<string, string> = {
+  clipart_title: "Clipart Set Name",
+  clipart_number: "Number of Images",
+  INCLUDED_HEADING: "What’s Included — Title",
+  INCLUDED_DETAILS: "What’s Included — Details",
+  QUALITY_HEADING_1: "Quality / Detail — Title",
+  QUALITY_DETAILS_1: "Quality / Detail — Details",
+  TRANSPARENT_HEADING: "Transparency — Title",
+  TRANSPARENT_DETAILS: "Transparency — Details",
+  LICENSE_HEADING: "License — Title",
+  LICENSE_DO: "License — Allowed",
+  LICENSE_DONT: "License — Not Allowed",
+  HOW_HEADING: "How It Works — Title",
+  CONSISTENCY_HEADING: "Consistency — Title",
+  BRAND_TRUST_HEADING: "Brand Trust — Title",
+  SHOP_HEADING: "Shop Promo — Title",
+  SHOP_DETAILS: "Shop Promo — Details",
+  FREE_GIFT_HEADING: "Free Gift — Title",
+  FREE_GIFT_SUBHEADING: "Free Gift — Subheading",
+  REVIEWS_HEADING: "Customer Reviews — Title",
+  INSPIRATION_HEADING: "Inspiration — Title",
+  FINAL_CTA_HEADING: "Final Call to Action — Title",
+  FINAL_CTA_DETAILS: "Final Call to Action — Details",
+  PROGRAM_DETAILS: "Programs / Compatibility — Details",
+  CONSISTENCY_DETAILS: "Consistency — Details",
+  transparent_details: "Transparency — Details",
+  FOOTER: "Footer Note",
+  // Add any new tokens here as you introduce them
+};
