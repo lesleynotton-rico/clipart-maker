@@ -24,23 +24,30 @@ interface MockupDef {
 interface Props {
   images: ImageItem[];
   /** Live values from Steps 2 & 4 (colors, fonts, overlays, etc.) */
-  fieldValues?: Record<string, any>;
+  fieldValues?: Record;
   /** Report selected layout defs (plus per-item tokens/custom image) back to App */
   onSelectionChange?: (
     selected: {
       id: string | number;
       def: any;
-      tokens?: Record<string, string>;
+      tokens?: Record;
       customImage?: string;
     }[]
   ) => void;
+ /** Inline editing (Step 3) */
+overlays?: Record<string, Record<string, string>>; // per-layout → { token: value }
+setOverlays?: React.Dispatch<
+  React.SetStateAction<Record<string, Record<string, string>>>
+>;
 
-  /** Inline editing (Step 3) */
-  overlays?: Record<number, Record<string, string>>; // per-layout → { token: value }
-  setOverlays?: React.Dispatch<
-    React.SetStateAction<Record<number, Record<string, string>>>
-  >;
+
+  /** NEW: Emit full build plan upward whenever inputs change */
+  onBuildPlanChange?: (plan: any) => void;
+
+  /** NEW: Emit validity status (≥1 Main, 1–4 Overviews, ≤20 total) */
+  onValidityChange?: (isValid: boolean) => void;
 }
+
 
 /** ----------------------------------------------------------------
  * Helpers
@@ -779,12 +786,11 @@ function ZoomModal(props: {
  * -------------------------------------------------------------- */
 
 export default function ChooseLayouts({
-  images,
-  fieldValues,
-  onSelectionChange,
-  overlays,
-  setOverlays,
+  images, fieldValues, onSelectionChange, overlays, setOverlays,
+  onBuildPlanChange, onValidityChange
 }: Props) {
+
+
   // derived grid detail from number of images
   const gridCols = useMemo(
     () => gridColsFor(clamp(Number(fieldValues?.numImages || 20), 1, 100)),
@@ -840,25 +846,110 @@ export default function ChooseLayouts({
     return map;
   }, [order, previewPool]);
 
-  // Tell parent whenever selection/order/overlays/customImages change
-  const lastEmit = useRef<string>("");
-  useEffect(() => {
-    const idsInOrder = order.map((d) => d.id).filter((id) => selectedIds.has(id));
-    const payloadKey =
-      JSON.stringify(idsInOrder) + "|" + JSON.stringify(overlays) + "|" + JSON.stringify(customMockupImages);
-    if (payloadKey !== lastEmit.current) {
-      lastEmit.current = payloadKey;
-      onSelectionChange?.(
-        idsInOrder.map((id) => ({
-          id,
-          def: defsById[id],
-          tokens: overlays?.[id] || {},
-          customImage: customMockupImages[id],
-        }))
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order, selectedIds, overlays, customMockupImages, defsById]);
+// Tell parent whenever selection/order/overlays/customImages change
+const lastEmit = useRef<string>("");
+useEffect(() => {
+  const idsInOrder = order.map((d) => d.id).filter((id) => selectedIds.has(id));
+
+  const payloadKey =
+    JSON.stringify(idsInOrder) +
+    "|" +
+    JSON.stringify(overlays || {}) +
+    "|" +
+    JSON.stringify(customMockupImages || {}) +
+    "|" +
+    JSON.stringify(fieldValues || {}) +
+    "|" +
+    JSON.stringify((images || []).map((i) => i?.url || ""));
+
+  if (payloadKey === lastEmit.current) return;
+  lastEmit.current = payloadKey;
+
+  onSelectionChange?.(
+    idsInOrder.map((id) => ({
+      id,
+      def: defsById[id],
+      tokens: (overlays && overlays[id]) || {},
+      customImage: customMockupImages ? customMockupImages[id] : undefined,
+    }))
+  );
+
+  const mainSelected = selectedIds.has(1) || selectedIds.has(2);
+  const collectionIds = [3, 4, 5, 6];
+  let collectionsSelected = 0;
+  for (const cid of collectionIds) if (selectedIds.has(cid)) collectionsSelected++;
+  const selectedCount = selectedIds.size;
+
+  const isValid =
+    selectedCount > 0 &&
+    mainSelected &&
+    collectionsSelected >= 1 &&
+    collectionsSelected <= 4 &&
+    selectedCount <= 20;
+
+  onValidityChange?.(isValid);
+
+  const brand = {
+    colors: {
+      primary: (fieldValues as any)?.primaryColor || "",
+      secondary: (fieldValues as any)?.secondaryColor || "",
+      accent: (fieldValues as any)?.accentColor || "",
+      neutral: (fieldValues as any)?.neutralColor || "",
+      background: (fieldValues as any)?.bgColor || "",
+    },
+    fonts: {
+      display: (fieldValues as any)?.fontDisplay || "",
+      heading: (fieldValues as any)?.fontHeading || "",
+      body: (fieldValues as any)?.fontBody || "",
+    },
+  };
+
+  const assets = {
+    images: (images || []).map((i) => i?.url).filter(Boolean) as string[],
+    logo:
+      (fieldValues as any)?.logoPreviewUrl ||
+      (fieldValues as any)?.logoUrl ||
+      "",
+    customByLayout: { ...(customMockupImages || {}) },
+  };
+
+  const pages = idsInOrder.map((id) => {
+    const def = defsById[id];
+    return {
+      layoutId: id,
+      title: def?.title || String(id),
+      text: (overlays && overlays[id]) || {},
+      customImage: customMockupImages ? customMockupImages[id] : undefined,
+    };
+  });
+
+  const buildPlan = {
+    meta: {
+      setName: (fieldValues as any)?.clipartSetName || "",
+      numImages: Number((fieldValues as any)?.numImages || 0),
+      exportedSize: { w: 2000, h: 2000 },
+      createdAt: new Date().toISOString(),
+    },
+    brand,
+    assets,
+    pages,
+  };
+
+  onBuildPlanChange?.(buildPlan);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [
+  order,
+  selectedIds,
+  overlays,
+  customMockupImages,
+  defsById,
+  fieldValues,
+  images,
+  onSelectionChange,
+  onBuildPlanChange,
+  onValidityChange,
+]);
+
 
   const [zoom, setZoom] = useState<{ open: boolean; def?: MockupDef }>({ open: false });
 
