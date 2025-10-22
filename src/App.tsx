@@ -14,8 +14,7 @@ import { EXPORT_PROFILES } from "./config/exportProfiles";
 import { downloadAllMockups } from "./utils/downloadAllMockups";
 import { slugify } from "./utils/slugify";
 import { exportSelectedToPngZip } from "./utils/exporter";
-import { exportSelectedToMultiPagePdf } from "./utils/exporterPdf";
-import { importToCanva, openInNewTab } from "./utils/canvaSender";
+/* PDF import flow not used in current buttons; keeping simple postMessage path */
 
 
 type ImageItem = { id: string; url: string };
@@ -42,33 +41,7 @@ function toast(msg: string) {
   console.log("[Toast]", msg);
 }
 
-function StepFiveActions() {
-  const [busy, setBusy] = useState<"none" | "canva" | "download">("none");
 
-  async function onEditInCanva() {
-    if (busy !== "none") return;
-    const exportIds = getSelectedExportIdsFromDom();
-    if (!exportIds.length) {
-      toast("Please select at least one mockup first.");
-      return;
-    }
-    setBusy("canva");
-    toast("Creating your Canva design…");
-    try {
-      const pdfBytes = await exportSelectedToMultiPagePdf(exportIds, 2000);
-      const url = await importToCanva(pdfBytes);
-      toast("Opening Canva!");
-      openInNewTab(url);
-    } catch (e: any) {
-      if (e?.message === "AUTH_REQUIRED") {
-        toast("Connecting to Canva… complete the login, then click ‘Edit in Canva’ again.");
-      } else {
-        toast(`Could not create Canva design: ${e?.message || e}`);
-      }
-    } finally {
-      setBusy("none");
-    }
-  }
 
   async function onDownloadAll() {
     if (busy !== "none") return;
@@ -758,28 +731,101 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
 </div>
 
         </Step>
+{/* STEP 4: Edit or Download */}
+<div className="glass-card p-4 sm:p-6 rounded-2xl flex flex-col gap-4">
+  <div className="flex items-center gap-3 flex-wrap">
+    {/* Generate Mockups & Edit in Canva */}
+    <button
+      className="btn btn--primary w-full sm:w-auto"
+      onClick={async () => {
+        if (selectedDefs.length === 0) {
+          showToast("error", "Please select at least one mock-up first.");
+          return;
+        }
+        if (images.length === 0) {
+          showToast("error", "Please upload your clipart images first.");
+          return;
+        }
+        // Build the plan and postMessage to Canva (canonical flow)
+        await handleBuildAndSend();
+      }}
+      disabled={selectedDefs.length === 0 || images.length === 0}
+      aria-disabled={selectedDefs.length === 0 || images.length === 0}
+    >
+      Generate Mockups & Edit in Canva
+    </button>
 
-        {/* STEP 4: Edit or Download */}
-       <Step number={4} title="Edit or Download" defaultOpen>
-  <div className="flex flex-col gap-4">
-    {/* Edit in Canva */}
-    <div className="flex items-center gap-3">
-      <button onClick={handleBuildAndSend} className="btn btn--primary w-full sm:w-auto">
-        Edit in Canva
-      </button>
-      <span style={{ color: "var(--mocktsy-muted)" }}>or</span>
-      <button
-        className="btn btn--outline w-full sm:w-auto"
-        onClick={async () => {
-          try {
-            if (selectedDefs.length === 0) {
-              showToast("error", "Please select at least one mock-up first.");
-              return;
+    <span style={{ color: "var(--mocktsy-muted)" }}>or</span>
+
+    {/* Generate Mockups & Download All */}
+    <button
+      className="btn btn--outline w-full sm:w-auto"
+      onClick={async () => {
+        try {
+          if (selectedDefs.length === 0) {
+            showToast("error", "Please select at least one mock-up first.");
+            return;
+          }
+          if (images.length === 0) {
+            showToast("error", "Please upload your clipart images first.");
+            return;
+          }
+
+          const profile = EXPORT_PROFILES.find((p) => p.key === platformKey)!;
+
+          // Build items per selected layout, honoring any custom image for B mockups
+          const urls = images.map((im) => im.url);
+          const items = selectedDefs.map((entry) => {
+            const def = entry.def;
+            const frameCount = (def.frames || []).length;
+            let chosen = frameCount > 0 ? urls.slice(0, frameCount) : [];
+            if (entry.customImage) {
+              if (chosen.length === 0) chosen = [entry.customImage];
+              else chosen[0] = entry.customImage;
             }
-            if (images.length === 0) {
-              showToast("error", "Please upload your clipart images first.");
-              return;
-            }
+            return {
+              layout: def,
+              images: chosen,
+              tokens: entry.tokens || {}, // per-layout text from Step 3
+            };
+          });
+
+          await downloadAllMockups({
+            items, // each: { layout, images, tokens? }
+            fieldValues: {
+              clipartSetName: clipartSetName,
+              logoUrl: logoUrl || (logoObjectUrl ?? undefined),
+              fontFamily: fontBody,
+              headingFontFamily: fontHeading,
+            },
+            width: profile.width,
+            height: profile.height,
+            onProgress: (d, t) => {
+              if (d === 1) showToast("info", "Working on your mock-ups…");
+              if (d === t) showToast("success", "Your ZIP is ready!");
+            },
+          });
+        } catch (e) {
+          console.error(e);
+          showToast("error", "Something went wrong. Please try again.");
+        }
+      }}
+      disabled={selectedDefs.length === 0 || images.length === 0}
+      aria-disabled={selectedDefs.length === 0 || images.length === 0}
+    >
+      Generate Mockups & Download All
+    </button>
+  </div>
+
+  <p className="text-sm opacity-70">
+    Files will be named like:{" "}
+    <span className="font-mono">
+      {slugify(clipartSetName || "clipart")}-mockup-1.png
+    </span>
+  </p>
+</div>
+
+        
 
             const profile = EXPORT_PROFILES.find((p) => p.key === platformKey)!;
 
