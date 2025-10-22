@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 
 // Existing project utilities & components
 import TestPlanButton from "./components/TestPlanButton";
@@ -7,82 +7,15 @@ import { buildPlan } from "./utils/buildPlan";
 import { sendBuildToCanva } from "./utils/canvaSender";
 import { MOCKUP_MAPPINGS } from "./config/mockupMapping";
 import ChooseLayouts from "./layouts/ChooseLayouts";
-import CustomizeText from "./components/CustomizeText";  // fine if unused for now
+import CustomizeText from "./components/CustomizeText";
 
-// New additions for Step 5 (Download)
+// Export profiles + download/export helpers
 import { EXPORT_PROFILES } from "./config/exportProfiles";
 import { downloadAllMockups } from "./utils/downloadAllMockups";
 import { slugify } from "./utils/slugify";
-import { exportSelectedToPngZip } from "./utils/exporter";
-/* PDF import flow not used in current buttons; keeping simple postMessage path */
 
 
 type ImageItem = { id: string; url: string };
-
-// --- Step 5 Internal Helper (buttons + actions) ---
-
-function getSelectedExportIdsFromDom(limit = 20): string[] {
-  const selected = Array.from(
-    document.querySelectorAll<HTMLElement>(
-      `[data-export-id][data-selected="true"], [data-export-id].selected`
-    )
-  );
-  const fallback = selected.length
-    ? selected
-    : Array.from(document.querySelectorAll<HTMLElement>(`[data-export-id]`));
-  return fallback
-    .slice(0, limit)
-    .map((el) => el.getAttribute("data-export-id")!)
-    .filter(Boolean);
-}
-
-function toast(msg: string) {
-  // Replace with your real toaster if you have one.
-  console.log("[Toast]", msg);
-}
-
-
-
-  async function onDownloadAll() {
-    if (busy !== "none") return;
-    const exportIds = getSelectedExportIdsFromDom();
-    if (!exportIds.length) {
-      toast("Please select at least one mockup first.");
-      return;
-    }
-    setBusy("download");
-    toast("Exporting PNGs…");
-    try {
-      await exportSelectedToPngZip(exportIds);
-      toast("Your ZIP is ready: mocktsy-mockups.zip");
-    } catch (e: any) {
-      toast(`Export failed: ${e?.message || e}`);
-    } finally {
-      setBusy("none");
-    }
-  }
-
-  const disabled = busy !== "none";
-
-  return (
-    <div className="flex gap-3">
-      <button
-        className="btn btn-primary rounded-2xl px-4 py-2 shadow"
-        onClick={onEditInCanva}
-        disabled={disabled}
-      >
-        {busy === "canva" ? "Working…" : "Edit in Canva"}
-      </button>
-      <button
-        className="btn rounded-2xl px-4 py-2 shadow"
-        onClick={onDownloadAll}
-        disabled={disabled}
-      >
-        {busy === "download" ? "Exporting…" : "Download All Mockups"}
-      </button>
-    </div>
-  );
-}
 
 
 /** ===== Utilities ===== */
