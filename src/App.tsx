@@ -850,8 +850,13 @@ const items = defsArray.map((entry: any, idx: number) => {
   </p>
 </div>
 
-      {/* Global Toast */}
-      <StatusToast kind={toastKind} message={toastMessage} visible={toastVisible} />
-    </div>
-  );
+    {/* Global Toast */}
+<StatusToast
+  kind={toastKind}
+  message={toastMessage}
+  visible={toastVisible}
+  onClose={() => setToastVisible(false)}
+/>
+</div>
+);
 }
