@@ -138,9 +138,7 @@ const canGenerate = true;
 const canGenerate =
   (((selectedDefs as any)?.length ?? 0) > 0 || ((selectedIds as any)?.length ?? 0) > 0) &&
   ((images as any)?.length ?? 0) > 0;
-
-
-
+*/
 // Tiny helper to trigger a client download from a Blob
 function downloadBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
@@ -702,7 +700,7 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
     <button className="btn btn--accent w-full sm:w-auto" onClick={onSavePreset}>
       Save Preset
     </button>
-    <button onClick={handleBuildAndSend} className="btn btn--primary w-full sm:w-auto">
+    <button onClick={handleBuildAndSend} className="btn btn--primary w-full sm:w-auto" type="button">
       Generate Mock-ups
     </button>
   </div>
@@ -715,7 +713,7 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
     {/* Generate Mockups & Edit in Canva */}
    <button
       type="button"
-      className="btn btn--primary w-full sm:w-auto"
+      className="btn btn--primary w-full sm:w-auto type="button""
       onClick={async (ev) => {
         ev.preventDefault();
 
