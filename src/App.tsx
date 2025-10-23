@@ -134,10 +134,11 @@ const canGenerate = true;
 
 /*
 // Real guard (restore this after debugging)
+// Enable when EITHER new (selectedDefs) OR legacy (selectedIds) selection has items AND images exist
 const canGenerate =
-  (selectedDefs?.length ?? 0) > 0 &&
-  (images?.length ?? 0) > 0;
-*/
+  (((selectedDefs as any)?.length ?? 0) > 0 || ((selectedIds as any)?.length ?? 0) > 0) &&
+  ((images as any)?.length ?? 0) > 0;
+
 
 
 // Tiny helper to trigger a client download from a Blob
@@ -353,25 +354,43 @@ function downloadBlob(blob: Blob, filename: string) {
   // --------------------------------
   // Build + send to Canva (unchanged logic)
   // --------------------------------
-  const handleBuildAndSend = useCallback(async () => {
-    try {
-      if (!images || images.length === 0) {
-        console.warn("[UI] No images uploaded yet — cannot build plan.");
-        setStatus("Please upload some images first, then try again.");
-        showToast("error", "Please upload some images first");
-        return;
-      }
-      const plan = await buildPlan(slideIds, smartPools, fieldValues);
-      sendBuildToCanva(plan).catch(() => {});
-      console.log("[UI] Sent plan to Canva:", plan);
-      setStatus("Plan sent to Canva");
-      showToast("success", "Sent to Canva");
-    } catch (err) {
-      console.error("[UI] Failed to build/send plan:", err);
-      setStatus("Failed to build/send plan (see console)");
-      showToast("error", "Failed to send to Canva");
+const handleBuildAndSend = useCallback(async () => {
+  try {
+    // Require images AND at least one selection (ids or defs)
+    const hasImages = !!images && images.length > 0;
+    const hasSelection =
+      ((selectedDefs as any)?.length ?? 0) > 0 || ((selectedIds as any)?.length ?? 0) > 0;
+
+    if (!hasImages || !hasSelection) {
+      const msg = !hasImages
+        ? "Please upload some images first"
+        : "Please select at least one mock-up first";
+      console.warn("[UI] Guard: ", msg);
+      setStatus(msg);
+      showToast("error", msg);
+      return;
     }
-  }, [images, slideIds, smartPools, fieldValues, showToast]);
+
+    const plan = await buildPlan(slideIds, smartPools, fieldValues);
+
+    // IMPORTANT: await the sender; if it returns a URL, open it as a fallback.
+    const maybeUrl: any = await sendBuildToCanva(plan);
+    if (typeof maybeUrl === "string" && maybeUrl.startsWith("http")) {
+      try {
+        window.open(maybeUrl, "_blank", "noopener,noreferrer");
+      } catch {}
+    }
+
+    console.log("[UI] Sent plan to Canva:", plan);
+    setStatus("Plan sent to Canva");
+    showToast("success", "Sent to Canva");
+  } catch (err) {
+    console.error("[UI] Failed to build/send plan:", err);
+    setStatus("Failed to build/send plan (see console)");
+    showToast("error", "Failed to send to Canva");
+  }
+}, [images, selectedIds, selectedDefs, slideIds, smartPools, fieldValues, showToast]);
+
 
   // --------------------------------
   // Helpers for Select All / Deselect All (Step 3)
@@ -746,21 +765,30 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
 
           // Build items per selected layout, honoring any custom image on upload-your-own variants
           const urls = images.map((im) => im.url);
-          const items = selectedDefs.map((entry: any, idx: number) => {
-            const def = entry.def;
-            const frameCount = (def.frames || []).length;
-            let chosen = frameCount > 0 ? urls.slice(0, frameCount) : [];
-            if (entry.customImage) {
-              if (chosen.length === 0) chosen = [entry.customImage];
-              else chosen[0] = entry.customImage;
-            }
-            return {
-              layout: def,
-              index: idx + 1,
-              images: chosen,
-              tokens: entry.tokens || {},
-            };
-          });
+          // Prefer new selection (selectedDefs); otherwise, build from legacy ids
+const defsArray =
+  ((selectedDefs as any)?.length ?? 0) > 0
+    ? (selectedDefs as any[])
+    : ((selectedIds as any[]) || [])
+        .map((id: any) => ({ def: (MOCKUP_MAPPINGS as any)?.[String(id)], tokens: {}, customImage: undefined }))
+        .filter((x) => !!x.def);
+
+const items = defsArray.map((entry: any, idx: number) => {
+  const def = entry.def;
+  const frameCount = (def.frames || []).length;
+  let chosen = frameCount > 0 ? urls.slice(0, frameCount) : [];
+  if (entry.customImage) {
+    if (chosen.length === 0) chosen = [entry.customImage];
+    else chosen[0] = entry.customImage;
+  }
+  return {
+    layout: def,
+    index: idx + 1, // optional metadata for naming
+    images: chosen,
+    tokens: entry.tokens || {},
+  };
+});
+
 
           const result = await downloadAllMockups({
             items,
