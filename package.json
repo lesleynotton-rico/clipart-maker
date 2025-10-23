@@ -7,8 +7,8 @@
   "scripts": {
     "extract": "formatjs extract \"src/**/*.{ts,tsx}\" --out-file dist/messages_en.json",
     "build": "webpack --config webpack.config.ts --mode production && npm run extract",
-    "format": "prettier '**/*.{css,ts,tsx}' --no-config --write",
-    "format:check": "prettier '**/*.{css,ts,tsx}' --no-config --check --ignore-path",
+    "format": "prettier \"**/*.{css,ts,tsx}\" --no-config --write",
+    "format:check": "prettier \"**/*.{css,ts,tsx}\" --no-config --check --ignore-path",
     "format:file": "prettier $1 --no-config --write",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -26,7 +26,7 @@
     "@aws-sdk/client-s3": "^3.908.0",
     "@aws-sdk/s3-request-presigner": "^3.908.0",
     "@canva/app-i18n-kit": "^1.1.1",
-    "@canva/app-ui-kit": "^5.0.2",
+    "@canva/app-ui-kit": "5.0.2",
     "@canva/asset": "^2.2.1",
     "@canva/design": "^2.7.2",
     "@canva/error": "^2.1.0",
@@ -113,6 +113,11 @@
   "engines": {
     "node": ">=20.10.0",
     "npm": "^10 || ^11"
+  },
+  "overrides": {
+    "@canva/app-ui-kit": "5.0.2",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
   },
   "canvaCliMetadata": {
     "name": "@canva/cli",
