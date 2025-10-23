@@ -788,23 +788,25 @@ const handleBuildAndSend = useCallback(async () => {
    };
  });
 
-           const result = await downloadAllMockups({
-             console.log("downloadAllMockups result:", result);
-             items,
-             fieldValues: {
-               clipartSetName: clipartSetName,
-               logoUrl: logoUrl || (logoObjectUrl ?? undefined),
-               fontFamily: fontBody,
-               headingFontFamily: fontHeading,
-             },
-             width: profile.width,
-             height: profile.height,
-             onProgress: (done: number, total: number) => {
-               if (done === total) {
-                 showToast("success", "Your ZIP is ready!");
-               }
-             },
-           });
+  const result = await downloadAllMockups({
+  items,
+  fieldValues: {
+    clipartSetName: clipartSetName,
+    logoUrl: logoUrl || (logoObjectUrl ?? undefined),
+    fontFamily: fontBody,
+    headingFontFamily: fontHeading,
+  },
+  width: profile.width,
+  height: profile.height,
+  onProgress: (done: number, total: number) => {
+    if (done === total) {
+      showToast("success", "Your ZIP is ready!");
+    }
+  },
+});
+
+// Debug: show exactly what downloadAllMockups returned
+console.log("downloadAllMockups result:", result);
 
            // Normalize return shapes to a Blob and download it
            if (result instanceof Blob) {
