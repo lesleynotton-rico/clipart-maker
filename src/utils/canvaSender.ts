@@ -1,112 +1,89 @@
 // src/utils/canvaSender.ts
-// Sends the built mockup plan to the Canva editor via postMessage.
-// Contracts:
-//   Outbound: { type: "MOCKTSY_BUILD_PLAN", version: 1, plan, meta }
-//   Inbound:  { type: "MOCKTSY_BUILD_PLAN_ACK", version: 1, ok: true }
+// Minimal, reliable sender for Mocktsy → Canva.
+// - If running inside an iframe (Canva), postMessage the plan and resolve true.
+// - If NOT embedded (local dev), return a URL string so caller can window.open() it.
+//   (This at least lands the user on Canva to log in / connect.)
 
-export const MOCKTSY_MSG = "MOCKTSY_BUILD_PLAN" as const;
-export const MOCKTSY_ACK = "MOCKTSY_BUILD_PLAN_ACK" as const;
+export type BuildPlan = any; // keep loose here to avoid type coupling
 
-type AckMessage = { type: string; version?: number; ok?: boolean };
+const MESSAGE_TYPE = "MOCKTSY_BUILD_PLAN";
 
-export type SendBuildToCanvaOptions = {
-  /** Lock to a known Canva origin. Default: https://www.canva.com */
-  canvaOrigin?: string;
-  /** Timeout (ms) to wait for ACK before failing. Default: 8000 */
-  timeoutMs?: number;
-};
+export function inIframe(): boolean {
+  try {
+    return window && window.parent && window.parent !== window;
+  } catch {
+    return false;
+  }
+}
 
 /**
- * Send the plan to Canva and resolve when an ACK is received (or timeout).
+ * Send the build plan to Canva host.
+ * Returns:
+ *  - true  → message posted to parent (embedded scenario)
+ *  - string URL → a URL that the caller can open as a fallback when not embedded
  */
-export function sendBuildToCanva(
-  plan: unknown,
-  opts: SendBuildToCanvaOptions = {}
-): Promise<void> {
-  const canvaOrigin =
-    opts.canvaOrigin ||
-    (import.meta?.env?.VITE_CANVA_ORIGIN as string) ||
-    "https://www.canva.com";
+export async function sendBuildToCanva(plan: BuildPlan): Promise<true | string> {
+  // Basic validation so we never throw in the UI layer
+  if (!plan || typeof plan !== "object") {
+    console.warn("[canvaSender] Empty or invalid plan passed:", plan);
+  }
 
-  const timeoutMs = typeof opts.timeoutMs === "number" ? opts.timeoutMs : 8000;
+  // Embedded → post to parent and resolve true
+  if (inIframe()) {
+    try {
+      window.parent.postMessage(
+        {
+          type: MESSAGE_TYPE,
+          payload: plan,
+          // keep versioned so future handlers can discriminate
+          meta: { source: "mocktsy", version: 1 }
+        },
+        "*"
+      );
+      return true;
+    } catch (err) {
+      console.error("[canvaSender] Failed to postMessage to parent:", err);
+      // Fall through to URL fallback
+    }
+  }
 
-  const payload = {
-    type: MOCKTSY_MSG,
-    version: 1,
-    plan,
-    meta: { from: "mocktsy", ts: Date.now() },
-  };
+  // Fallback when not embedded (local dev). We can't create a design URL here
+  // without a backend, so we return Canva Home/Editor as a gentle landing.
+  // App.tsx will window.open(thisUrl) if it receives a string.
+  const fallbackUrl = "https://www.canva.com/";
+  return fallbackUrl;
+}
 
-  const targetWindow: Window = window.parent || window;
-
-  return new Promise<void>((resolve, reject) => {
+/**
+ * Optional helper if you later want to listen for acks from Canva.
+ * Not used right now, but handy to keep around.
+ */
+export function waitForAck(timeoutMs = 5000): Promise<boolean> {
+  return new Promise((resolve) => {
     let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        resolve(false);
+      }
+    }, timeoutMs);
 
-    const onMessage = (evt: MessageEvent<AckMessage>) => {
+    function onMessage(ev: MessageEvent) {
       try {
-        if (
-          canvaOrigin !== "*" &&
-          typeof evt.origin === "string" &&
-          !evt.origin.includes("localhost") &&
-          evt.origin !== canvaOrigin
-        ) {
-          return;
-        }
-        const data = evt.data;
-        if (!data || typeof data !== "object") return;
-
-        if (data.type === MOCKTSY_ACK && data.version === 1) {
-          settled = true;
-          window.removeEventListener("message", onMessage);
-          resolve();
+        const data = ev?.data || {};
+        if (data?.type === MESSAGE_TYPE + "_ACK") {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            window.removeEventListener("message", onMessage);
+            resolve(true);
+          }
         }
       } catch {
         // ignore
       }
-    };
-
-    window.addEventListener("message", onMessage, { passive: true });
-
-    try {
-const isEmbedded = window !== window.parent;
-const targetOrigin = isEmbedded ? canvaOrigin : (window.location.origin || "*");
-targetWindow.postMessage(payload, targetOrigin);
-    } catch (err) {
-      window.removeEventListener("message", onMessage);
-      reject(err instanceof Error ? err : new Error("postMessage failed"));
-      return;
     }
 
-    const t = window.setTimeout(() => {
-      if (settled) return;
-      window.removeEventListener("message", onMessage);
-      reject(
-        new Error(
-          "No acknowledgement received from Canva. Is the Canva side listening for MOCKTSY_BUILD_PLAN?"
-        )
-      );
-    }, timeoutMs);
-
-    window.addEventListener(
-      "beforeunload",
-      () => {
-        window.clearTimeout(t);
-        window.removeEventListener("message", onMessage);
-      },
-      { once: true }
-    );
+    window.addEventListener("message", onMessage);
   });
-}
-
-/** Back-compat aliases for older imports */
-export const importToCanva = sendBuildToCanva;
-
-/** Some older code imports this from here; provide a safe helper. */
-export function openInNewTab(url: string): void {
-  try {
-    const w = window.open(url, "_blank", "noopener,noreferrer");
-    if (w) w.opener = null;
-  } catch {
-    // no-op
-  }
 }
