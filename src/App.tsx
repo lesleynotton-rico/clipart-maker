@@ -122,46 +122,46 @@ export default function App() {
   // NEW: Platform + selected mockups (for downloads)
   const [platformKey, setPlatformKey] = useState("etsy_square");
   const [selectedDefs, setSelectedDefs] = useState<Array<{ id: number | string; def: any }>>([]);
-// Busy state just for the generate/download actions
-const [busy, setBusy] = useState<"none" | "canva" | "download">("none");
+  // Busy state just for the generate/download actions
+  const [busy, setBusy] = useState<"none" | "canva" | "download">("none");
 
-// Guard to enable/disable the two main action buttons
-// TODO: DEBUG ONLY — force-enable buttons so we can test flows even if state isn’t wired.
-// After confirming both flows work, revert to the real guard below and fix the state wiring.
-const canGenerate = true;
+  // Guard to enable/disable the two main action buttons
+  // TODO: DEBUG ONLY — force-enable buttons so we can test flows even if state isn’t wired.
+  // After confirming both flows work, revert to the real guard below and fix the state wiring.
+  const canGenerate = true;
 
-/*
- // Real guard (restore this after debugging)
- // Enable when EITHER new (selectedDefs) OR legacy (selectedIds as used previously) selection has items AND images exist
- const canGenerate =
-   (((selectedDefs as any)?.length ?? 0) > 0 || ((selectedIds as any)?.length ?? 0) > 0) &&
-   ((images as any)?.length ?? 0) > 0;
-*/
+  /*
+  // Real guard (restore this after debugging)
+  // Enable when EITHER new (selectedDefs) OR legacy (selectedIds as used previously) selection has items AND images exist
+  const canGenerate =
+    (((selectedDefs as any)?.length ?? 0) > 0 || ((selectedIds as any)?.length ?? 0) > 0) &&
+    ((images as any)?.length ?? 0) > 0;
+  */
 
-// Helper: decode base64 string into Uint8Array
-function base64ToUint8Array(base64: string): Uint8Array {
-  // strip any data URL prefix
-  const cleaned = base64.replace(/^data:.*;base64,/, "");
-  const binary = atob(cleaned);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary.charCodeAt(i);
+  // Helper: decode base64 string into Uint8Array
+  function base64ToUint8Array(base64: string): Uint8Array {
+    // strip any data URL prefix
+    const cleaned = base64.replace(/^data:.*;base64,/, "");
+    const binary = atob(cleaned);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
   }
-  return bytes;
-}
 
-// Tiny helper to trigger a client download from a Blob
-function downloadBlob(blob: Blob, filename: string) {
-  const a = document.createElement("a");
-  const url = URL.createObjectURL(blob);
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+  // Tiny helper to trigger a client download from a Blob
+  function downloadBlob(blob: Blob, filename: string) {
+    const a = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
@@ -363,7 +363,7 @@ function downloadBlob(blob: Blob, filename: string) {
   // --------------------------------
   // Build + send to Canva (unchanged logic)
   // --------------------------------
-const handleBuildAndSend = useCallback(async () => {
+ const handleBuildAndSend = useCallback(async () => {
   try {
     const hasImages = !!images && images.length > 0;
     const hasSelection =
@@ -696,75 +696,93 @@ const handleBuildAndSend = useCallback(async () => {
   overlays={overlays}
   setOverlays={setOverlays}
   />
-...
 
-  // The remainder of the file is unchanged except for:
-  // - the Canva button's className fixed to "btn btn--primary w-full sm:w-auto"
-  // - the download handler now includes the robust zip-handling branch (see below)
-  // Note: For brevity the rest of the UI remains identical other than the replaced sections
+          {/* Save preset (now includes Step 3 text) */}
+<div className="mt-4">
+  <p className="text-xs mb-2" style={{ color: "var(--mocktsy-muted)" }}>
+    Save your current options as a preset to easily reuse in the future.
+  </p>
+  <div className="flex flex-col sm:flex-row gap-2">
+    <button className="btn btn--accent w-full sm:w-auto" onClick={onSavePreset}>
+      Save Preset
+    </button>
+    <button onClick={handleBuildAndSend} className="btn btn--primary w-full sm:w-auto" type="button">
+      Generate Mock-ups
+    </button>
+  </div>
+</div>
 
-  {/* STEP 3: Generate or Download */}
-  <div className="glass-card p-4 sm:p-6 rounded-2xl flex flex-col gap-4">
-    <div className="flex items-center gap-3 flex-wrap">
-      {/* Generate Mockups & Edit in Canva */}
-     <button
-       type="button"
-       className="btn btn--primary w-full sm:w-auto"
-       onClick={async (ev) => {
-         ev.preventDefault();
+        </Step>
+{/* STEP 3: Generate or Download */}
+<div className="glass-card p-4 sm:p-6 rounded-2xl flex flex-col gap-4">
+  <div className="flex items-center gap-3 flex-wrap">
+    {/* Generate Mockups & Edit in Canva */}
+   <button
+      type="button"
+      className="btn btn--primary w-full sm:w-auto"
+      onClick={async (ev) => {
+        ev.preventDefault();
 
-         // guard + spinner
-         if (!canGenerate) {
-           showToast("error", "Please select at least one mock-up and upload images first.");
-           return;
-         }
-         if (busy !== "none") return;
+        // guard + spinner
+        if (!canGenerate) {
+          showToast("error", "Please select at least one mock-up and upload images first.");
+          return;
+        }
+        if (busy !== "none") return;
 
-         try {
-           setBusy("canva");
-           showToast("info", "Creating your Canva design…");
+        try {
+          setBusy("canva");
+          showToast("info", "Creating your Canva design…");
 
-           // Ensure this actually runs the current plan → Canva bridge
-           await handleBuildAndSend();
+          // Ensure this actually runs the current plan → Canva bridge
+          await handleBuildAndSend();
 
-           showToast("success", "Sent to Canva!");
-         } catch (e) {
-           console.error(e);
-           showToast("error", "Could not create the Canva design. Please try again.");
-         } finally {
-           setBusy("none");
-         }
-       }}
-       disabled={!canGenerate || busy !== "none"}
-       data-state={busy === "canva" ? "loading" : "idle"}
-     >
-       {busy === "canva" ? "Working…" : "Generate Mockups & Edit in Canva"}
-     </button>
+          showToast("success", "Sent to Canva!");
+        } catch (e) {
+          console.error(e);
+          showToast("error", "Could not create the Canva design. Please try again.");
+        } finally {
+          setBusy("none");
+        }
+      }}
+      disabled={!canGenerate || busy !== "none"}
+      data-state={busy === "canva" ? "loading" : "idle"}
+    >
+      {busy === "canva" ? "Working…" : "Generate Mockups & Edit in Canva"}
+    </button>
 
-     <span style={{ color: "var(--mocktsy-muted)" }}>or</span>
+    <span style={{ color: "var(--mocktsy-muted)" }}>or</span>
 
-     {/* Generate Mockups & Download All */}
-     <button
-       type="button"
-       className="btn btn--outline w-full sm:w-auto"
-       onClick={async (ev) => {
-         ev.preventDefault();
+    {/* Generate Mockups & Download All */}
+    <button
+      type="button"
+      className="btn btn--outline w-full sm:w-auto"
+      onClick={async (ev) => {
+        ev.preventDefault();
+        // <-- ADDED: confirm the click handler is running
+        console.log("Download button clicked", {
+          canGenerate,
+          busy,
+          imagesCount: images.length,
+          selectedDefsCount: (selectedDefs as any)?.length ?? 0,
+          selectedIdsCount: selectedIds?.length ?? 0,
+        });
 
-         if (!canGenerate) {
-           showToast("error", "Please select at least one mock-up and upload images first.");
-           return;
-         }
-         if (busy !== "none") return;
+        if (!canGenerate) {
+          showToast("error", "Please select at least one mock-up and upload images first.");
+          return;
+        }
+        if (busy !== "none") return;
 
-         try {
-           setBusy("download");
-           showToast("info", "Working on your mock-ups…");
+        try {
+          setBusy("download");
+          showToast("info", "Working on your mock-ups…");
 
-           const profile = EXPORT_PROFILES.find((p) => p.key === platformKey)!;
+          const profile = EXPORT_PROFILES.find((p) => p.key === platformKey)!;
 
-           // Build items per selected layout, honoring any custom image on upload-your-own variants
-           const urls = images.map((im) => im.url);
-           // Prefer new selection (selectedDefs); otherwise, build from legacy ids
+          // Build items per selected layout, honoring any custom image on upload-your-own variants
+          const urls = images.map((im) => im.url);
+          // Prefer new selection (selectedDefs); otherwise, build from legacy ids
  const defsArray =
    ((selectedDefs as any)?.length ?? 0) > 0
      ? (selectedDefs as any[])
@@ -788,34 +806,37 @@ const handleBuildAndSend = useCallback(async () => {
    };
  });
 
-  const result = await downloadAllMockups({
-  items,
-  fieldValues: {
-    clipartSetName: clipartSetName,
-    logoUrl: logoUrl || (logoObjectUrl ?? undefined),
-    fontFamily: fontBody,
-    headingFontFamily: fontHeading,
-  },
-  width: profile.width,
-  height: profile.height,
-  onProgress: (done: number, total: number) => {
-    if (done === total) {
-      showToast("success", "Your ZIP is ready!");
-    }
-  },
-});
+          // <-- ADDED: log the items we're about to pass
+          console.log("Calling downloadAllMockups with items:", items);
 
-// Debug: show exactly what downloadAllMockups returned
-console.log("downloadAllMockups result:", result);
+          const result = await downloadAllMockups({
+            items,
+            fieldValues: {
+              clipartSetName: clipartSetName,
+              logoUrl: logoUrl || (logoObjectUrl ?? undefined),
+              fontFamily: fontBody,
+              headingFontFamily: fontHeading,
+            },
+            width: profile.width,
+            height: profile.height,
+            onProgress: (done: number, total: number) => {
+              if (done === total) {
+                showToast("success", "Your ZIP is ready!");
+              }
+            },
+          });
 
-           // Normalize return shapes to a Blob and download it
-           if (result instanceof Blob) {
-             const fname = `${slugify(clipartSetName || "clipart")}-mockups.zip`;
-             downloadBlob(result, fname);
-           } else if (result?.blob instanceof Blob) {
-             const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
-             downloadBlob(result.blob, fname);
-           } else if (result?.type === "zip" && result?.data) {
+          // Debug: show exactly what downloadAllMockups returned
+          console.log("downloadAllMockups result:", result);
+
+          // Normalize return shapes to a Blob and download it
+          if (result instanceof Blob) {
+            const fname = `${slugify(clipartSetName || "clipart")}-mockups.zip`;
+            downloadBlob(result, fname);
+          } else if (result?.blob instanceof Blob) {
+            const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
+            downloadBlob(result.blob, fname);
+          } else if (result?.type === "zip" && result?.data) {
   // Log for debugging so we can inspect the response shape in console
   console.log("ZIP response (raw):", result);
 
@@ -884,30 +905,29 @@ console.log("downloadAllMockups result:", result);
     "Exporter returned JSON instead of a ZIP. Next step: fix utils/downloadAllMockups to return a Blob ZIP."
   );
 }
-           }
-         } catch (e) {
-           console.error(e);
-           showToast("error", "Something went wrong while preparing your ZIP. Please try again.");
-         } finally {
-           setBusy("none");
-         }
-       }}
-       disabled={!canGenerate || busy !== "none"}
-       data-state={busy === "download" ? "loading" : "idle"}
-     >
-       {busy === "download" ? "Preparing ZIP…" : "Generate Mockups & Download All"}
-     </button>
-   </div>
+        } catch (e) {
+          console.error(e);
+          showToast("error", "Something went wrong while preparing your ZIP. Please try again.");
+        } finally {
+          setBusy("none");
+        }
+      }}
+      disabled={!canGenerate || busy !== "none"}
+      data-state={busy === "download" ? "loading" : "idle"}
+    >
+      {busy === "download" ? "Preparing ZIP…" : "Generate Mockups & Download All"}
+    </button>
+  </div>
 
-   <p className="text-sm opacity-70">
-     Files will be named like:{" "}
-     <span className="font-mono">
-       {slugify(clipartSetName || "clipart")}-mockup-1.png
-     </span>
-   </p>
- </div>
+  <p className="text-sm opacity-70">
+    Files will be named like:{" "}
+    <span className="font-mono">
+      {slugify(clipartSetName || "clipart")}-mockup-1.png
+    </span>
+  </p>
+</div>
 
-     {/* Global Toast */}
+  {/* Global Toast */}
 <StatusToast
   kind={toastKind}
   message={toastMessage}
