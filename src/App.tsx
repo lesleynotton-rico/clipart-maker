@@ -128,9 +128,17 @@ export default function App() {
 const [busy, setBusy] = useState<"none" | "canva" | "download">("none");
 
 // Guard to enable/disable the two main action buttons
+// TODO: DEBUG ONLY — force-enable buttons so we can test flows even if state isn’t wired.
+// After confirming both flows work, revert to the real guard below and fix the state wiring.
+const canGenerate = true;
+
+/*
+// Real guard (restore this after debugging)
 const canGenerate =
   (selectedDefs?.length ?? 0) > 0 &&
   (images?.length ?? 0) > 0;
+*/
+
 
 // Tiny helper to trigger a client download from a Blob
 function downloadBlob(blob: Blob, filename: string) {
@@ -690,15 +698,20 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
     <button
       className="btn btn--primary w-full sm:w-auto"
       onClick={async () => {
+        // guard + spinner
         if (!canGenerate) {
           showToast("error", "Please select at least one mock-up and upload images first.");
           return;
         }
         if (busy !== "none") return;
+
         try {
           setBusy("canva");
           showToast("info", "Creating your Canva design…");
-          await handleBuildAndSend(); // uses buildPlan + sendBuildToCanva
+
+          // Ensure this actually runs the current plan → Canva bridge
+          await handleBuildAndSend();
+
           showToast("success", "Sent to Canva!");
         } catch (e) {
           console.error(e);
@@ -708,6 +721,7 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
         }
       }}
       disabled={!canGenerate || busy !== "none"}
+      data-state={busy === "canva" ? "loading" : "idle"}
     >
       {busy === "canva" ? "Working…" : "Generate Mockups & Edit in Canva"}
     </button>
@@ -742,13 +756,12 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
             }
             return {
               layout: def,
-              index: idx + 1, // optional metadata for naming
+              index: idx + 1,
               images: chosen,
               tokens: entry.tokens || {},
             };
           });
 
-          // Attempt export; support multiple return shapes gracefully
           const result = await downloadAllMockups({
             items,
             fieldValues: {
@@ -766,8 +779,7 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
             },
           });
 
-          // If exporter already triggers the download, we’re done.
-          // If it returns a Blob-like, force a save.
+          // Normalize return shapes to a Blob and download it
           if (result instanceof Blob) {
             const fname = `${slugify(clipartSetName || "clipart")}-mockups.zip`;
             downloadBlob(result, fname);
@@ -782,7 +794,7 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
             console.warn("Exporter returned unexpected result:", result);
             showToast(
               "error",
-              "Unexpected response from exporter. Please update the exporter to return a ZIP file."
+              "Exporter returned JSON instead of a ZIP. Next step: fix utils/downloadAllMockups to return a Blob ZIP."
             );
           }
         } catch (e) {
@@ -793,6 +805,7 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
         }
       }}
       disabled={!canGenerate || busy !== "none"}
+      data-state={busy === "download" ? "loading" : "idle"}
     >
       {busy === "download" ? "Preparing ZIP…" : "Generate Mockups & Download All"}
     </button>
