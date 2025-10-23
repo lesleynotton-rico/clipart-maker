@@ -713,9 +713,12 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
 <div className="glass-card p-4 sm:p-6 rounded-2xl flex flex-col gap-4">
   <div className="flex items-center gap-3 flex-wrap">
     {/* Generate Mockups & Edit in Canva */}
-    <button
+   <button
+      type="button"
       className="btn btn--primary w-full sm:w-auto"
-      onClick={async () => {
+      onClick={async (ev) => {
+        ev.preventDefault();
+
         // guard + spinner
         if (!canGenerate) {
           showToast("error", "Please select at least one mock-up and upload images first.");
@@ -748,8 +751,11 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
 
     {/* Generate Mockups & Download All */}
     <button
+      type="button"
       className="btn btn--outline w-full sm:w-auto"
-      onClick={async () => {
+      onClick={async (ev) => {
+        ev.preventDefault();
+
         if (!canGenerate) {
           showToast("error", "Please select at least one mock-up and upload images first.");
           return;
