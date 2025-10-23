@@ -817,17 +817,49 @@ const items = defsArray.map((entry: any, idx: number) => {
           } else if (result?.blob instanceof Blob) {
             const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
             downloadBlob(result.blob, fname);
-          } else if (result?.type === "zip" && result?.data) {
-            const blob = new Blob([result.data], { type: "application/zip" });
-            const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
-            downloadBlob(blob, fname);
-          } else {
-            console.warn("Exporter returned unexpected result:", result);
-            showToast(
-              "error",
-              "Exporter returned JSON instead of a ZIP. Next step: fix utils/downloadAllMockups to return a Blob ZIP."
-            );
-          }
+            // Helper: decode base64 string into Uint8Array
+function base64ToUint8Array(base64: string): Uint8Array {
+  // strip any data URL prefix
+  const cleaned = base64.replace(/^data:.*;base64,/, "");
+  const binary = atob(cleaned);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+         } else if (result?.type === "zip" && result?.data) {
+  let blob: Blob;
+
+  // Case A: backend returned base64-encoded string inside JSON
+  if (typeof result.data === "string") {
+    const bytes = base64ToUint8Array(result.data);
+    blob = new Blob([bytes], { type: "application/zip" });
+
+  // Case B: ArrayBuffer returned (binary)
+  } else if (result.data instanceof ArrayBuffer) {
+    blob = new Blob([result.data], { type: "application/zip" });
+
+  // Case C: Uint8Array or array of numbers
+  } else if (result.data instanceof Uint8Array || Array.isArray(result.data)) {
+    const arr = result.data instanceof Uint8Array ? result.data : new Uint8Array(result.data as number[]);
+    blob = new Blob([arr], { type: "application/zip" });
+
+  // Fallback: wrap raw data (last resort)
+  } else {
+    blob = new Blob([result.data], { type: "application/zip" });
+  }
+
+  const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
+  downloadBlob(blob, fname);
+} else {
+  console.warn("Exporter returned unexpected result:", result);
+  showToast(
+    "error",
+    "Exporter returned JSON instead of a ZIP. Next step: fix utils/downloadAllMockups to return a Blob ZIP."
+  );
+}
         } catch (e) {
           console.error(e);
           showToast("error", "Something went wrong while preparing your ZIP. Please try again.");
