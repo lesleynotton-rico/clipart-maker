@@ -124,6 +124,25 @@ export default function App() {
   // NEW: Platform + selected mockups (for downloads)
   const [platformKey, setPlatformKey] = useState("etsy_square");
   const [selectedDefs, setSelectedDefs] = useState<Array<{ id: number | string; def: any }>>([]);
+// Busy state just for the generate/download actions
+const [busy, setBusy] = useState<"none" | "canva" | "download">("none");
+
+// Guard to enable/disable the two main action buttons
+const canGenerate =
+  (selectedDefs?.length ?? 0) > 0 &&
+  (images?.length ?? 0) > 0;
+
+// Tiny helper to trigger a client download from a Blob
+function downloadBlob(blob: Blob, filename: string) {
+  const a = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
@@ -664,28 +683,33 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
 </div>
 
         </Step>
-{/* STEP 4: Edit or Download */}
+{/* STEP 3: Generate or Download */}
 <div className="glass-card p-4 sm:p-6 rounded-2xl flex flex-col gap-4">
   <div className="flex items-center gap-3 flex-wrap">
     {/* Generate Mockups & Edit in Canva */}
     <button
       className="btn btn--primary w-full sm:w-auto"
       onClick={async () => {
-        if (selectedDefs.length === 0) {
-          showToast("error", "Please select at least one mock-up first.");
+        if (!canGenerate) {
+          showToast("error", "Please select at least one mock-up and upload images first.");
           return;
         }
-        if (images.length === 0) {
-          showToast("error", "Please upload your clipart images first.");
-          return;
+        if (busy !== "none") return;
+        try {
+          setBusy("canva");
+          showToast("info", "Creating your Canva design…");
+          await handleBuildAndSend(); // uses buildPlan + sendBuildToCanva
+          showToast("success", "Sent to Canva!");
+        } catch (e) {
+          console.error(e);
+          showToast("error", "Could not create the Canva design. Please try again.");
+        } finally {
+          setBusy("none");
         }
-        // Build the plan and postMessage to Canva (canonical flow)
-        await handleBuildAndSend();
       }}
-      disabled={selectedDefs.length === 0 || images.length === 0}
-      aria-disabled={selectedDefs.length === 0 || images.length === 0}
+      disabled={!canGenerate || busy !== "none"}
     >
-      Generate Mockups & Edit in Canva
+      {busy === "canva" ? "Working…" : "Generate Mockups & Edit in Canva"}
     </button>
 
     <span style={{ color: "var(--mocktsy-muted)" }}>or</span>
@@ -694,21 +718,21 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
     <button
       className="btn btn--outline w-full sm:w-auto"
       onClick={async () => {
+        if (!canGenerate) {
+          showToast("error", "Please select at least one mock-up and upload images first.");
+          return;
+        }
+        if (busy !== "none") return;
+
         try {
-          if (selectedDefs.length === 0) {
-            showToast("error", "Please select at least one mock-up first.");
-            return;
-          }
-          if (images.length === 0) {
-            showToast("error", "Please upload your clipart images first.");
-            return;
-          }
+          setBusy("download");
+          showToast("info", "Working on your mock-ups…");
 
           const profile = EXPORT_PROFILES.find((p) => p.key === platformKey)!;
 
-          // Build items per selected layout, honoring any custom image for B mockups
+          // Build items per selected layout, honoring any custom image on upload-your-own variants
           const urls = images.map((im) => im.url);
-          const items = selectedDefs.map((entry) => {
+          const items = selectedDefs.map((entry: any, idx: number) => {
             const def = entry.def;
             const frameCount = (def.frames || []).length;
             let chosen = frameCount > 0 ? urls.slice(0, frameCount) : [];
@@ -718,13 +742,15 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
             }
             return {
               layout: def,
+              index: idx + 1, // optional metadata for naming
               images: chosen,
-              tokens: entry.tokens || {}, // per-layout text from Step 3
+              tokens: entry.tokens || {},
             };
           });
 
-          await downloadAllMockups({
-            items, // each: { layout, images, tokens? }
+          // Attempt export; support multiple return shapes gracefully
+          const result = await downloadAllMockups({
+            items,
             fieldValues: {
               clipartSetName: clipartSetName,
               logoUrl: logoUrl || (logoObjectUrl ?? undefined),
@@ -733,20 +759,42 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
             },
             width: profile.width,
             height: profile.height,
-            onProgress: (d, t) => {
-              if (d === 1) showToast("info", "Working on your mock-ups…");
-              if (d === t) showToast("success", "Your ZIP is ready!");
+            onProgress: (done: number, total: number) => {
+              if (done === total) {
+                showToast("success", "Your ZIP is ready!");
+              }
             },
           });
+
+          // If exporter already triggers the download, we’re done.
+          // If it returns a Blob-like, force a save.
+          if (result instanceof Blob) {
+            const fname = `${slugify(clipartSetName || "clipart")}-mockups.zip`;
+            downloadBlob(result, fname);
+          } else if (result?.blob instanceof Blob) {
+            const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
+            downloadBlob(result.blob, fname);
+          } else if (result?.type === "zip" && result?.data) {
+            const blob = new Blob([result.data], { type: "application/zip" });
+            const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
+            downloadBlob(blob, fname);
+          } else {
+            console.warn("Exporter returned unexpected result:", result);
+            showToast(
+              "error",
+              "Unexpected response from exporter. Please update the exporter to return a ZIP file."
+            );
+          }
         } catch (e) {
           console.error(e);
-          showToast("error", "Something went wrong. Please try again.");
+          showToast("error", "Something went wrong while preparing your ZIP. Please try again.");
+        } finally {
+          setBusy("none");
         }
       }}
-      disabled={selectedDefs.length === 0 || images.length === 0}
-      aria-disabled={selectedDefs.length === 0 || images.length === 0}
+      disabled={!canGenerate || busy !== "none"}
     >
-      Generate Mockups & Download All
+      {busy === "download" ? "Preparing ZIP…" : "Generate Mockups & Download All"}
     </button>
   </div>
 
@@ -757,65 +805,6 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
     </span>
   </p>
 </div>
-
-        
-
-            const profile = EXPORT_PROFILES.find((p) => p.key === platformKey)!;
-
-            // Build items per selected layout, honoring any custom image for B mockups
-            const urls = images.map((im) => im.url);
-            const items = selectedDefs.map((entry) => {
-              const def = entry.def;
-              const frameCount = (def.frames || []).length;
-
-              let chosen = frameCount > 0 ? urls.slice(0, frameCount) : [];
-
-              // if a custom image was provided for this layout, put it in the first frame
-              if (entry.customImage) {
-                if (chosen.length === 0) chosen = [entry.customImage];
-                else chosen[0] = entry.customImage;
-              }
-
-              return {
-                layout: def,
-                images: chosen,
-                tokens: entry.tokens || {}, // per-layout text from Step 3
-              };
-            });
-
-            await downloadAllMockups({
-              items, // each: { layout, images, tokens? }
-              fieldValues: {
-                clipartSetName: clipartSetName,
-                logoUrl: logoUrl || (logoObjectUrl ?? undefined),
-                fontFamily: fontBody,
-                headingFontFamily: fontHeading,
-              },
-              width: profile.width,
-              height: profile.height,
-              onProgress: (d, t) => {
-                if (d === 1) showToast("info", "Working on your mock-ups…");
-                if (d === t) showToast("success", "Your ZIP is ready!");
-              },
-            });
-          } catch (e) {
-            console.error(e);
-            showToast("error", "Something went wrong. Please try again.");
-          }
-        }}
-      >
-        Download All Mock-ups
-      </button>
-    </div>
-
-    <p className="text-xs text-gray-500">
-      Files will be named like:{" "}
-      <span className="italic">{slugify(clipartSetName || "clipart")}-mockup-1.png</span>
-    </p>
-  </div>
-</Step>
-
-      </div>
 
       {/* Global Toast */}
       <StatusToast kind={toastKind} message={toastMessage} visible={toastVisible} />
