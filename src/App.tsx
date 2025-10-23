@@ -789,6 +789,7 @@ const handleBuildAndSend = useCallback(async () => {
  });
 
            const result = await downloadAllMockups({
+             console.log("downloadAllMockups result:", result);
              items,
              fieldValues: {
                clipartSetName: clipartSetName,
@@ -813,35 +814,74 @@ const handleBuildAndSend = useCallback(async () => {
              const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
              downloadBlob(result.blob, fname);
            } else if (result?.type === "zip" && result?.data) {
-             let blob: Blob;
+  // Log for debugging so we can inspect the response shape in console
+  console.log("ZIP response (raw):", result);
 
-             // Case A: backend returned base64-encoded string inside JSON
-             if (typeof result.data === "string") {
-               const bytes = base64ToUint8Array(result.data);
-               blob = new Blob([bytes], { type: "application/zip" });
+  // Normalize common shapes into a payload we can convert to bytes:
+  // - base64 string (result.data is string)
+  // - object with .data being array-of-bytes (Buffer-like)
+  // - object with .data being base64 string
+  // - object with .base64 property
+  // - Array<number>
+  // - Uint8Array or ArrayBuffer
+  let payload: any = result.data;
 
-             // Case B: ArrayBuffer returned (binary)
-             } else if (result.data instanceof ArrayBuffer) {
-               blob = new Blob([result.data], { type: "application/zip" });
+  // If payload is an object, try to extract common nested forms
+  if (payload && typeof payload === "object") {
+    // Buffer-like { type: "Buffer", data: [...] }
+    if (Array.isArray((payload as any).data)) {
+      payload = new Uint8Array((payload as any).data);
+    }
+    // Some backends embed base64 under data (string)
+    else if (typeof (payload as any).data === "string") {
+      payload = (payload as any).data;
+    }
+    // Some backends put base64 under .base64
+    else if (typeof (payload as any).base64 === "string") {
+      payload = (payload as any).base64;
+    }
+    // Some backends use { data: { data: [...] } } weird nesting
+    else if ((payload as any).data && Array.isArray((payload as any).data?.data)) {
+      payload = new Uint8Array((payload as any).data.data);
+    }
+  }
 
-             // Case C: Uint8Array or array of numbers
-             } else if (result.data instanceof Uint8Array || Array.isArray(result.data)) {
-               const arr = result.data instanceof Uint8Array ? result.data : new Uint8Array(result.data as number[]);
-               blob = new Blob([arr], { type: "application/zip" });
+  // Now create a Blob based on the normalized payload type
+  let blob: Blob;
+  try {
+    if (typeof payload === "string") {
+      // payload is base64
+      const bytes = base64ToUint8Array(payload);
+      blob = new Blob([bytes], { type: "application/zip" });
+    } else if (payload instanceof ArrayBuffer) {
+      blob = new Blob([payload], { type: "application/zip" });
+    } else if (payload instanceof Uint8Array) {
+      blob = new Blob([payload], { type: "application/zip" });
+    } else if (Array.isArray(payload) && payload.every((n) => typeof n === "number")) {
+      blob = new Blob([new Uint8Array(payload as number[])], { type: "application/zip" });
+    } else if (payload && typeof payload === "object" && (payload as any).type === "Buffer" && Array.isArray((payload as any).data)) {
+      blob = new Blob([new Uint8Array((payload as any).data)], { type: "application/zip" });
+    } else {
+      // Last resort: if it's something else (e.g. plain JSON), stringify it and log it - we'll see it in downloads if required
+      console.warn("Unrecognized ZIP payload shape, falling back to wrapping it:", payload);
+      blob = new Blob([JSON.stringify(payload)], { type: "application/zip" });
+    }
+  } catch (err) {
+    console.error("Failed to construct ZIP blob from payload:", payload, err);
+    showToast("error", "Failed to prepare ZIP. See console for details.");
+    setBusy("none");
+    return;
+  }
 
-             // Fallback: wrap raw data (last resort)
-             } else {
-               blob = new Blob([result.data], { type: "application/zip" });
-             }
-
-             const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
-             downloadBlob(blob, fname);
-           } else {
-             console.warn("Exporter returned unexpected result:", result);
-             showToast(
-               "error",
-               "Exporter returned JSON instead of a ZIP. Next step: fix utils/downloadAllMockups to return a Blob ZIP."
-             );
+  const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
+  downloadBlob(blob, fname);
+} else {
+  console.warn("Exporter returned unexpected result:", result);
+  showToast(
+    "error",
+    "Exporter returned JSON instead of a ZIP. Next step: fix utils/downloadAllMockups to return a Blob ZIP."
+  );
+}
            }
          } catch (e) {
            console.error(e);
