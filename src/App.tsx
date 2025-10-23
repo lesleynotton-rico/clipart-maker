@@ -139,7 +139,19 @@ const canGenerate =
   (((selectedDefs as any)?.length ?? 0) > 0 || ((selectedIds as any)?.length ?? 0) > 0) &&
   ((images as any)?.length ?? 0) > 0;
 */
-// Tiny helper to trigger a client download from a Blob
+// Helper: decode base64 string into Uint8Array
+function base64ToUint8Array(base64: string): Uint8Array {
+  // strip any data URL prefix
+  const cleaned = base64.replace(/^data:.*;base64,/, "");
+  const binary = atob(cleaned);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+  // Tiny helper to trigger a client download from a Blob
 function downloadBlob(blob: Blob, filename: string) {
   const a = document.createElement("a");
   const url = URL.createObjectURL(blob);
@@ -713,8 +725,8 @@ Transform your artwork into gorgeous, high-impact mock-ups - fast, easy, and bea
     {/* Generate Mockups & Edit in Canva */}
    <button
       type="button"
-      className="btn btn--primary w-full sm:w-auto type="button""
-      onClick={async (ev) => {
+className="btn btn--primary w-full sm:w-auto"      
+     onClick={async (ev) => {
         ev.preventDefault();
 
         // guard + spinner
@@ -817,18 +829,7 @@ const items = defsArray.map((entry: any, idx: number) => {
           } else if (result?.blob instanceof Blob) {
             const fname = result?.filename || `${slugify(clipartSetName || "clipart")}-mockups.zip`;
             downloadBlob(result.blob, fname);
-            // Helper: decode base64 string into Uint8Array
-function base64ToUint8Array(base64: string): Uint8Array {
-  // strip any data URL prefix
-  const cleaned = base64.replace(/^data:.*;base64,/, "");
-  const binary = atob(cleaned);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
+            
          } else if (result?.type === "zip" && result?.data) {
   let blob: Blob;
 
