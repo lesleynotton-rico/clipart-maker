@@ -356,7 +356,6 @@ function downloadBlob(blob: Blob, filename: string) {
   // --------------------------------
 const handleBuildAndSend = useCallback(async () => {
   try {
-    // Require images AND at least one selection (ids or defs)
     const hasImages = !!images && images.length > 0;
     const hasSelection =
       ((selectedDefs as any)?.length ?? 0) > 0 || ((selectedIds as any)?.length ?? 0) > 0;
@@ -373,7 +372,7 @@ const handleBuildAndSend = useCallback(async () => {
 
     const plan = await buildPlan(slideIds, smartPools, fieldValues);
 
-    // IMPORTANT: await the sender; if it returns a URL, open it as a fallback.
+    // Await the sender; if it returns a URL, open it as a fallback.
     const maybeUrl: any = await sendBuildToCanva(plan);
     if (typeof maybeUrl === "string" && maybeUrl.startsWith("http")) {
       try {
