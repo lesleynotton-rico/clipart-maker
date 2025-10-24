@@ -892,18 +892,14 @@ export default function App() {
   </p>
 </div>
 
-      
-    </span>
-  </p>
-</div>
-
-  {/* Global Toast */}
+{/* Global Toast */}
 <StatusToast
   kind={toastKind}
   message={toastMessage}
   visible={toastVisible}
-  onClose={() => setToastVisible(false)}
 />
-</div>
-);
+
+      </div> {/* .max-w-6xl */}
+    </div>   {/* .min-h-screen */}
+  );
 }
